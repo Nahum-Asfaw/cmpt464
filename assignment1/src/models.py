@@ -29,7 +29,11 @@ class IMNet(nn.Module):
         # Finish with a biased Linear layer producing one scalar.
         # Add no other layers; forward handles the output activation.
         ##### your code starts here ##### Problem 1.1
-        raise NotImplementedError("Problem 1.1: network architecture")
+        for weights in hidden_dims: # ??? I guess so... no lc
+            layers.append(nn.Linear(z_dim+3, z_dim+3))
+            layers.append(nn.LeakyReLU(0.02))
+        layers.append(nn.Linear(z_dim+3, 1))
+        #raise NotImplementedError("Problem 1.1: network architecture")
         ##### your code ends here #####
         self.mlp = nn.Sequential(*layers)
 

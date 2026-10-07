@@ -21,7 +21,10 @@ def iou(prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     """
     # Labels are already thresholded; return a scalar tensor on their device.
     ##### your code starts here ##### Problem 1.3: IoU
-    raise NotImplementedError("Problem 1.3: IoU")
+    a = torch.logical_and(prediction, target)
+    b = torch.logical_or(prediction, target)
+    return torch.count_nonzero(torch.div(a, b))
+    #raise NotImplementedError("Problem 1.3: IoU")
     ##### your code ends here #####
 
 

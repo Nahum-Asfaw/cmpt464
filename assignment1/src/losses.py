@@ -9,7 +9,9 @@ def mse_loss(prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     """
     # Keep the scalar on the input device and connected to the prediction's graph.
     ##### your code starts here ##### Problem 1.2
-    raise NotImplementedError("Problem 1.2: MSE loss")
+    a = prediction - target
+    return torch.mean(torch.square(a))
+    #raise NotImplementedError("Problem 1.2: MSE loss")
     ##### your code ends here #####
 
 
