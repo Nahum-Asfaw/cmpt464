@@ -108,7 +108,7 @@ def main() -> None:
         help="Assignment problem to run.",
     )
     parser.add_argument("--lr", type=float, default=0.001, help="Adam learning rate.")
-    parser.add_argument("--steps", type=int, default=5000, help="Updates per shape.")
+    parser.add_argument("--steps", type=int, default=5000, help="Updates per shape.") # DEFAULT = 5000
     parser.add_argument("--bs", type=int, default=4096, help="Query points per batch.")
     parser.add_argument("--num_points", type=int, default=32768, help="Fixed training points per shape.")
     parser.add_argument("--sigma", type=float, default=0.02, help="Gaussian noise std for prob2_4 only.")

@@ -21,9 +21,11 @@ def iou(prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     """
     # Labels are already thresholded; return a scalar tensor on their device.
     ##### your code starts here ##### Problem 1.3: IoU
-    a = torch.logical_and(prediction, target)
-    b = torch.logical_or(prediction, target)
-    return torch.count_nonzero(torch.div(a, b))
+    both = torch.count_nonzero(torch.logical_and(prediction, target))
+    either = torch.count_nonzero(torch.logical_or(prediction, target))
+    #print(f"both: {both}, either: {either}")
+    #print(f"IoU: {torch.div(both, either)}")
+    return torch.div(both, either)
     #raise NotImplementedError("Problem 1.3: IoU")
     ##### your code ends here #####
 
@@ -38,7 +40,12 @@ def chamfer_distance(prediction: torch.Tensor, target: torch.Tensor) -> torch.Te
     # N and M may differ. Compare each shape's own point sets and keep the
     # returned scalar tensor on the input device.
     ##### your code starts here ##### Problem 1.3: Chamfer distance
-    raise NotImplementedError("Problem 1.3: Chamfer distance")
+    diff = torch.cdist(prediction, target, p=2)**2
+    sum1 = torch.mean(torch.amin(diff, dim=2))
+    sum2 = torch.mean(torch.amin(diff, dim=1))
+    #print(f"sum1: {sum1}, sum2: {sum2}")
+    return sum1 + sum2
+    #raise NotImplementedError("Problem 1.3: Chamfer distance")
     ##### your code ends here #####
 
 
