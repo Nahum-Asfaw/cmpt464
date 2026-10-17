@@ -24,7 +24,9 @@ def bce_loss(logits: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     """
     # Use the logits-based PyTorch loss from Problem 2.1, without a prior sigmoid.
     ##### your code starts here ##### Problem 2.1
-    raise NotImplementedError("Problem 2.1: BCE loss")
+    criterion = torch.nn.BCEWithLogitsLoss()
+    return criterion(logits, target)
+    #raise NotImplementedError("Problem 2.1: BCE loss")
     ##### your code ends here #####
 
 
