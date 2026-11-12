@@ -149,7 +149,7 @@ def exact_hermite(vertices, faces):
     edge2 = corner2 - corner0
 
     # unit normal of every triangle, (F, 3), pointing to the side from which its corners go round counter-clockwise
-    face_normal = ...
+    face_normal = torch.linalg.cross(edge1, edge2)
 
     # the integer grid coordinates inside each triangle's bounding box, (F, 3) long
     corners = torch.stack([corner0, corner1, corner2], dim=1)
@@ -208,7 +208,14 @@ def exact_hermite(vertices, faces):
         # same_sign (P,) bool: w0, w1, w2 share one sign (zeros count, so a line through an edge shared by two
         # triangles hits both); hit (P,) bool: same sign and a nonzero sum (a zero sum means the triangle is
         # parallel to the line)
-        same_sign = ...
+        #same_sign = torch.zeros(1, G + 1, device="cuda")
+        #for i in range(len(w0)):
+        #    same_sign[i] = True if ((w0[i] >= 0 and w1[i] >= 0 and w2[i] >= 0) or (w0[i] <= 0 and w1[0] <= 0 and w2[0] <= 0)) else False
+         
+        # AI:
+        same_sign = (((w0 >= 0) & (w1 >= 0) & (w2 >= 0)) | ((w0 <= 0) & (w1 <= 0) & (w2 <= 0)))
+
+        print(f'same_sign:{same_sign}')
         hit = (area != 0) & same_sign
 
         # divided by their sum, w0, w1, w2 weight the three corners to rebuild q, and the same weights give the
@@ -220,8 +227,14 @@ def exact_hermite(vertices, faces):
         hit_position = line_position[hit]
         hit_triangle = candidate_triangle[hit]
         edge_start = line_origin[hit].long()
-        edge_start[:, a] = ...
-        hit_t = ...
+        #print(f'edge_start: {edge_start}\nhit_triangle: {hit_triangle}')
+        # what does edge_start mean?
+        # the edge_start => int component of hit_position
+        # hit_t => decimal component of hit_position
+        edge_start[:, a] = hit_position.int()
+        hit_t = hit_position - hit_position.int() # smth - smth => [0, 1]
+        print(f"edge_start: {edge_start}\nhit_triangle: {hit_triangle}\n" \
+              f"hit_position: {hit_position}\nhit_t: {hit_t}")
 
         # flat id of each hit's edge in the (G+1)^3 slice of axis a, (H,) long
         edge_id = (edge_start[:, 0] * (G + 1) + edge_start[:, 1]) * (G + 1) + edge_start[:, 2]
@@ -232,7 +245,7 @@ def exact_hermite(vertices, faces):
         # a per-edge minimum that torch.Tensor.scatter_reduce computes in one call;
         # nearest (H,) bool: the hit has the smallest t on its edge
         smallest_t = torch.full(((G + 1) ** 3,), float("inf"), device="cuda")
-        smallest_t = ...
+        smallest_t = torch.Tensor.scatter_reduce_()
         nearest = ...
 
         has_hermite[a].view(-1)[edge_id[nearest]] = True
