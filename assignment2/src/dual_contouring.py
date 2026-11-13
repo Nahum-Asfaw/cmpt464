@@ -62,12 +62,15 @@ def crossed_edges(sdf):
     # Python for loops over them (a loop over the three axes is fine). Look through the torch documentation for
     # the functions that, combined, do this.
 
-    inside = ...
+    # Inside: points in the sdf that are <= 0
+    # some sort of selection
+    inside = sdf <= 0
+    print(f'sdf: {sdf}\ninside: {inside}')
 
     # compare every grid point with its next neighbour along each axis;
     # the last slice along that axis has no edge and stays False
-    sign_change = ...
-    sign_change[0, :G, :, :] = ...
+    sign_change = torch.zeros(3, G + 1, G + 1, G + 1, device="cuda")
+    sign_change[0, :G, :, :] = ... # true if the two ends of the edge are on diff sides... how do I check that?
     sign_change[1, :, :G, :] = ...
     sign_change[2, :, :, :G] = ...
 
@@ -150,6 +153,7 @@ def exact_hermite(vertices, faces):
 
     # unit normal of every triangle, (F, 3), pointing to the side from which its corners go round counter-clockwise
     face_normal = torch.linalg.cross(edge1, edge2)
+    #print(f'face_normal: {face_normal}')
 
     # the integer grid coordinates inside each triangle's bounding box, (F, 3) long
     corners = torch.stack([corner0, corner1, corner2], dim=1)
@@ -215,7 +219,7 @@ def exact_hermite(vertices, faces):
         # AI:
         same_sign = (((w0 >= 0) & (w1 >= 0) & (w2 >= 0)) | ((w0 <= 0) & (w1 <= 0) & (w2 <= 0)))
 
-        print(f'same_sign:{same_sign}')
+        #print(f'same_sign:{same_sign}')
         hit = (area != 0) & same_sign
 
         # divided by their sum, w0, w1, w2 weight the three corners to rebuild q, and the same weights give the
@@ -233,8 +237,8 @@ def exact_hermite(vertices, faces):
         # hit_t => decimal component of hit_position
         edge_start[:, a] = hit_position.int()
         hit_t = hit_position - hit_position.int() # smth - smth => [0, 1]
-        print(f"edge_start: {edge_start}\nhit_triangle: {hit_triangle}\n" \
-              f"hit_position: {hit_position}\nhit_t: {hit_t}")
+        #print(f"edge_start: {edge_start}\nhit_triangle: {hit_triangle}\n" \
+        #      f"hit_position: {hit_position}\nhit_t: {hit_t}")
 
         # flat id of each hit's edge in the (G+1)^3 slice of axis a, (H,) long
         edge_id = (edge_start[:, 0] * (G + 1) + edge_start[:, 1]) * (G + 1) + edge_start[:, 2]
@@ -245,12 +249,19 @@ def exact_hermite(vertices, faces):
         # a per-edge minimum that torch.Tensor.scatter_reduce computes in one call;
         # nearest (H,) bool: the hit has the smallest t on its edge
         smallest_t = torch.full(((G + 1) ** 3,), float("inf"), device="cuda")
-        smallest_t = torch.Tensor.scatter_reduce_()
-        nearest = ...
+
+        # AI:
+        smallest_t = torch.Tensor.scatter_reduce_(smallest_t, 0, edge_id, hit_t, reduce="amin", include_self=False)
+        nearest = (smallest_t[edge_id] == hit_t)
+        #print(f"nearest: {nearest}\nsmallest_t: {smallest_t}")
 
         has_hermite[a].view(-1)[edge_id[nearest]] = True
         t[a].view(-1)[edge_id[nearest]] = hit_t[nearest]
-        normal[a].view(-1, 3)[edge_id[nearest]] = ...
+        #print(f'face_normal[:, a]: {face_normal[:, a]}')
+        #print(f'torch.masked_select(hit_triangle, nearest)]: {torch.masked_select(hit_triangle, nearest)}')
+        # Basically using nearest to select the triangles in hit_triangles to get the normal from.
+        normal[a].view(-1, 3)[edge_id[nearest]] = face_normal[(torch.masked_select(hit_triangle, nearest))]
+
     ##### your code ends here #####
     return has_hermite, t, normal
 
