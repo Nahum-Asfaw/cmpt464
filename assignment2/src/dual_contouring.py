@@ -65,19 +65,42 @@ def crossed_edges(sdf):
     # Inside: points in the sdf that are <= 0
     # some sort of selection
     inside = sdf <= 0
-    print(f'sdf: {sdf}\ninside: {inside}')
+    #print(f'sdf: {sdf}\ninside: {inside}')
+    #print(f'inside[:, :, 0][0]: {inside[:, :, 0][0]}')
+    #print(f'inside[:, :, 0][0][0]: {inside[:, :, 0][0][0]}')
+
 
     # compare every grid point with its next neighbour along each axis;
     # the last slice along that axis has no edge and stays False
-    sign_change = torch.zeros(3, G + 1, G + 1, G + 1, device="cuda")
-    sign_change[0, :G, :, :] = ... # true if the two ends of the edge are on diff sides... how do I check that?
-    sign_change[1, :, :G, :] = ...
-    sign_change[2, :, :, :G] = ...
+    sign_change = torch.zeros(3, G + 1, G + 1, G + 1, device="cuda", dtype=torch.bool)
+    #print(f'sign_change: {sign_change}')
+    #sign_change[0, :G, :, :] = ... # true if the two ends of the edge are on diff sides... how do I check that?
+                                   # this is in the x dir
+                                   # idea: if inside[:, x][0][0] != inside[:, x][0][1] then
+                                   # sign_change[:, x][0][0] = true else false
+    sign_change[0, :G, :, :] = inside[:G, :, :][:][:] != inside[:G, :, :][:][: + 1]
+    #print(f"sign_change[0, :G, :, :]: {sign_change[0, :G, :, :]}")
+    sign_change[1, :, :G, :] = inside[:, :G, :][:][:] != inside[:, :G, :][:][: + 1]
+    sign_change[2, :, :, :G] = inside[:, :, :G][:][:] != inside[:, :, :G][:][: + 1]
 
     # inside_corner_count (G, G, G) int: how many of the cell's 8 corners are inside;
     # a cell needs a vertex when its 8 corners are not all on one side
-    inside_corner_count = ...
-    has_vertex = ...
+    # "for each offset, take a (G, G, G)-shaped view of inside starting at that offset"
+    # 
+    # if its (0, 1, 1) -> inside[:, :G, :G]
+    # if its (1, 0, 1) -> inside[:G, :, :G] ??
+    inside_corner_count = torch.zeros(G, G, G, device="cuda")
+
+    # AI:
+    for dx, dy, dz in CORNERS:
+        corner_inside = inside[
+            dx:dx + G,
+            dy:dy + G,
+            dz:dz + G,
+        ]
+    inside_corner_count += corner_inside.to(torch.int64)
+
+    has_vertex = (inside_corner_count > 0) & (inside_corner_count < 8)
     ##### your code ends here #####
     return inside, sign_change, has_vertex
 
@@ -298,7 +321,9 @@ def qef_vertices(qef_edges, t, normal):
         # point (E, 3): the crossing point on each of these edges, its start plus t along axis a
         edge_start = qef_edges[a].nonzero()
         point = edge_start.float()
-        point[:, a] += ...
+        #print(f"point: {point}\nt[a, qef_edges[a]]: {t[a, qef_edges[a]]}")
+        point[:, a] += t[a][qef_edges[a]] # "its start plus t along axis a"
+                                          # like the normals statement below
 
         cells.append(edge_cells(edge_start, a).reshape(-1))
         points.append(point.repeat_interleave(4, dim=0))
@@ -309,8 +334,11 @@ def qef_vertices(qef_edges, t, normal):
     crossing_normal = torch.cat(normals)
 
     # each entry's share of A and b, (4C, 3, 3) and (4C, 3)
-    matrix_term = ...
-    rhs_term = ...
+    # matrix_term = sum_i(n_i*n_i^T), i.e, = A
+    print(f"crossing_normal: {crossing_normal}")
+    matrix_term = torch.mean(torch.matmul(crossing_normal, torch.t(crossing_normal)))
+    print(f"matrix_term: {matrix_term}")
+    rhs_term = ... # = b
 
     # for every cell: A, matrix (G^3, 3, 3); b, rhs (G^3, 3); the number of crossings, crossing_count (G^3,);
     # their sum, point_sum (G^3, 3); and the mean crossing point c, mass_point (G^3, 3)
