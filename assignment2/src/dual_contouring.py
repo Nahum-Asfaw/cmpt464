@@ -175,7 +175,7 @@ def exact_hermite(vertices, faces):
     edge2 = corner2 - corner0
 
     # unit normal of every triangle, (F, 3), pointing to the side from which its corners go round counter-clockwise
-    face_normal = torch.linalg.cross(edge1, edge2)
+    face_normal = torch.linalg.cross(edge1, edge2) # how do i normalize this???
     #print(f'face_normal: {face_normal}')
 
     # the integer grid coordinates inside each triangle's bounding box, (F, 3) long
@@ -335,10 +335,18 @@ def qef_vertices(qef_edges, t, normal):
 
     # each entry's share of A and b, (4C, 3, 3) and (4C, 3)
     # matrix_term = sum_i(n_i*n_i^T), i.e, = A
-    print(f"crossing_normal: {crossing_normal}")
-    matrix_term = ...
+    #print(f"crossing_normal: {crossing_normal}")
+
+    # AI:
+    matrix_term = torch.matmul(crossing_normal.unsqueeze(-1), crossing_normal.unsqueeze(-2))
+    # I understand that it gives A, but I'm not familiar with pytorch so I didn't know
+    # how to use torch.unsqueeze(). Also, how is the transpose handled?
     print(f"matrix_term: {matrix_term}")
-    rhs_term = ... # = b
+
+    # AI:
+    rhs_term = crossing_normal * (crossing_normal * crossing_point).sum(dim=1, keepdim=True)
+    # I don't understand this term. IK it's b, but thats it.
+    print(f"rhs_term: {rhs_term}")
 
     # for every cell: A, matrix (G^3, 3, 3); b, rhs (G^3, 3); the number of crossings, crossing_count (G^3,);
     # their sum, point_sum (G^3, 3); and the mean crossing point c, mass_point (G^3, 3)
@@ -348,7 +356,8 @@ def qef_vertices(qef_edges, t, normal):
     one_per_crossing = torch.ones_like(crossing_point[:, 0])
     crossing_count = torch.zeros(G ** 3, device="cuda").index_add(0, crossing_cell, one_per_crossing)
     point_sum = torch.zeros(G ** 3, 3, device="cuda").index_add(0, crossing_cell, crossing_point)
-    mass_point = ...
+    # is mean c
+    mass_point = torch.zeros(G ** 3, 3, device="cuda").index_reduce_(0, crossing_cell, crossing_point, "mean") 
 
     # low corner of every cell, (G^3, 3)
     coordinates = torch.arange(G, device="cuda")
@@ -364,8 +373,17 @@ def qef_vertices(qef_edges, t, normal):
     for attempt in range(LAMBDA_ROUNDS):
         # solution (G^3, 3): the minimizer of every cell's regularized QEF, all cells solved at once
         # (see torch.linalg.solve); solution_in_cell (G^3,) bool
-        solution = ...
-        solution_in_cell = ...
+
+        #(A + lambda I) x = b + lambda c.
+        # => A + regularization*Identity = b + regularization*mass_point
+        # so A is (matrix + regularization*Identity) and b = (rhs + regularization*mass_point) ?
+        solution = torch.linalg.solve((matrix + regularization*identity), (rhs + regularization*mass_point))
+        print(f"solution: {solution}")
+
+        # idk
+        solution_in_cell = torch.zeros(G ** 3, device="cuda")
+        solution_in_cell = solution == True
+        print(f"solution_in_cell: {solution_in_cell}")
 
         newly_solved = unsolved & solution_in_cell
         vertex_position[newly_solved] = solution[newly_solved]
