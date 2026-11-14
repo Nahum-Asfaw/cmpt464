@@ -336,7 +336,7 @@ def qef_vertices(qef_edges, t, normal):
     # each entry's share of A and b, (4C, 3, 3) and (4C, 3)
     # matrix_term = sum_i(n_i*n_i^T), i.e, = A
     print(f"crossing_normal: {crossing_normal}")
-    matrix_term = torch.mean(torch.matmul(crossing_normal, torch.t(crossing_normal)))
+    matrix_term = ...
     print(f"matrix_term: {matrix_term}")
     rhs_term = ... # = b
 
