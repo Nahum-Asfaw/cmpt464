@@ -78,10 +78,16 @@ def crossed_edges(sdf):
                                    # this is in the x dir
                                    # idea: if inside[:, x][0][0] != inside[:, x][0][1] then
                                    # sign_change[:, x][0][0] = true else false
-    sign_change[0, :G, :, :] = torch.ne(inside[:G, :, :][:, :], inside[:G, :, :][:, : + 1])
+
+    # AI:
+    sign_change[0, :G, :, :] = inside[:-1, :, :] != inside[1:, :, :]
+    sign_change[1, :, :G, :] = inside[:, :-1, :] != inside[:, 1:, :]
+    sign_change[2, :, :, :G] = inside[:, :, :-1] != inside[:, :, 1:]
     #print(f"sign_change[0, :G, :, :]: {sign_change[0, :G, :, :]}")
-    sign_change[1, :, :G, :] = torch.ne(inside[:, :G, :][:, :], inside[:, :G, :][:, : + 1])
-    sign_change[2, :, :, :G] = torch.ne(inside[:, :, :G][:, :], inside[:, :, :G][:, : + 1])
+
+    # My initial implemntation created a bug where ~ half of the triangles weren't shaded...
+    # I did: sign_change[0, :G, :, :] = torch.ne(inside[:G, :, :][:, :], inside[:G, :, :][:, : + 1])
+    # It also scored NaN on the majority of chamfer distance calculations
 
     # inside_corner_count (G, G, G) int: how many of the cell's 8 corners are inside;
     # a cell needs a vertex when its 8 corners are not all on one side
@@ -189,7 +195,7 @@ def exact_hermite(vertices, faces):
     edge2 = corner2 - corner0
 
     # unit normal of every triangle, (F, 3), pointing to the side from which its corners go round counter-clockwise
-    face_normal = torch.linalg.cross(edge1, edge2) # how do i normalize this???
+    face_normal = torch.nn.functional.normalize(torch.linalg.cross(edge1, edge2)) # how do i normalize this???
     #print(f'face_normal: {face_normal}')
 
     # the integer grid coordinates inside each triangle's bounding box, (F, 3) long
@@ -455,11 +461,21 @@ def estimate_hermite(sdf):
     gradient_end[2, :, :, :G] = gradient[:, :, 1:]
 
     # not finite on edges without a sign change; those edges are masked out later
-    t = ...
-
+    # should be s0/s0-s1
+    # -> sdf_start / sdf_start - sdf_end
+    t = torch.div(sdf_start, torch.sub(sdf_start, sdf_end))
+    #print("sdf_start:", sdf_start)
+    #print("t:", t)
+    
     # gradient_at_crossing (3, G+1, G+1, G+1, 3): the two end gradients interpolated at the crossing
-    gradient_at_crossing = ...
-    normal = ...
+    # g_t(i, j, k) = (s(i+1, j, k) - s(i-1, j, k))/2, where i, j, k define the point in t
+    # how to write this?
+
+    gradient_at_crossing = ... # needed?
+
+    # n = ((1-t)g_0 + t*g_1)/||((1-t)g_0 + t*g_1)||
+    # which is the normalization of ((1-t)*g_0 + t*g1)
+    normal = torch.nn.functional.normalize(((1-t[..., None])*gradient_end + t[..., None]*gradient_start))
     ##### your code ends here #####
     return t, normal
 
