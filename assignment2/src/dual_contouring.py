@@ -78,10 +78,10 @@ def crossed_edges(sdf):
                                    # this is in the x dir
                                    # idea: if inside[:, x][0][0] != inside[:, x][0][1] then
                                    # sign_change[:, x][0][0] = true else false
-    sign_change[0, :G, :, :] = inside[:G, :, :][:][:] != inside[:G, :, :][:][: + 1]
+    sign_change[0, :G, :, :] = torch.ne(inside[:G, :, :][:, :], inside[:G, :, :][:, : + 1])
     #print(f"sign_change[0, :G, :, :]: {sign_change[0, :G, :, :]}")
-    sign_change[1, :, :G, :] = inside[:, :G, :][:][:] != inside[:, :G, :][:][: + 1]
-    sign_change[2, :, :, :G] = inside[:, :, :G][:][:] != inside[:, :, :G][:][: + 1]
+    sign_change[1, :, :G, :] = torch.ne(inside[:, :G, :][:, :], inside[:, :G, :][:, : + 1])
+    sign_change[2, :, :, :G] = torch.ne(inside[:, :, :G][:, :], inside[:, :, :G][:, : + 1])
 
     # inside_corner_count (G, G, G) int: how many of the cell's 8 corners are inside;
     # a cell needs a vertex when its 8 corners are not all on one side
@@ -98,7 +98,7 @@ def crossed_edges(sdf):
             dy:dy + G,
             dz:dz + G,
         ]
-    inside_corner_count += corner_inside.to(torch.int64)
+        inside_corner_count += corner_inside.to(torch.int64)
 
     has_vertex = (inside_corner_count > 0) & (inside_corner_count < 8)
     ##### your code ends here #####
@@ -127,13 +127,27 @@ def dual_faces(inside, sign_change, has_vertex):
     for a in range(3):
         # edge_start (E, 3) long: start grid point of every edge along axis a that changes sign;
         # quad (E, 4) long: vertex ids of the four cells around each of these edges, in CELL_OFFSETS order
-        edge_start = ...
-        quad = ...
+        edge_start = sign_change[a].nonzero() # similar line in qef_verticies
+                                              # im not sure what nonzero() does
+        #print(f"edge_start:", edge_start)
+
+        # for edge in edge_start:
+        #  quads.append(vertex id from cell_offset of edge)
+        quad = vertex_id[edge_cells(edge_start, a)]
+        #print("quad: ", quad)
 
         # start_inside (E,) bool: whether the start grid point of each edge is inside the shape
-        start_inside = ...
+        # true if edge_start is in inside, else false
+        #print("inside:", inside)
+        start_inside = inside[edge_start[:, 0], edge_start[:, 1], edge_start[:, 2]]
+        #print("start_inside:", start_inside)
         # flip the winding when the edge starts outside, so every face points outward
-        quad = ...
+        # can't seperate them cause then it would be out of order
+
+        # AI:
+        quad = torch.where(start_inside[:, None], quad, quad[:, [0, 3, 2, 1]])
+        # again I'm not familiar with pytorch ops, so I didn't know how to index start_inside
+        # and I didn't know what torch.where() was
 
         faces.append(quad[:, [0, 1, 2]])
         faces.append(quad[:, [0, 2, 3]])
@@ -321,6 +335,7 @@ def qef_vertices(qef_edges, t, normal):
         # point (E, 3): the crossing point on each of these edges, its start plus t along axis a
         edge_start = qef_edges[a].nonzero()
         point = edge_start.float()
+        #print("edge_start:", edge_start)
         #print(f"point: {point}\nt[a, qef_edges[a]]: {t[a, qef_edges[a]]}")
         point[:, a] += t[a][qef_edges[a]] # "its start plus t along axis a"
                                           # like the normals statement below
@@ -341,12 +356,12 @@ def qef_vertices(qef_edges, t, normal):
     matrix_term = torch.matmul(crossing_normal.unsqueeze(-1), crossing_normal.unsqueeze(-2))
     # I understand that it gives A, but I'm not familiar with pytorch so I didn't know
     # how to use torch.unsqueeze(). Also, how is the transpose handled?
-    print(f"matrix_term: {matrix_term}")
+    #print(f"matrix_term: {matrix_term}")
 
     # AI:
     rhs_term = crossing_normal * (crossing_normal * crossing_point).sum(dim=1, keepdim=True)
     # I don't understand this term. IK it's b, but thats it.
-    print(f"rhs_term: {rhs_term}")
+    #print(f"rhs_term: {rhs_term}")
 
     # for every cell: A, matrix (G^3, 3, 3); b, rhs (G^3, 3); the number of crossings, crossing_count (G^3,);
     # their sum, point_sum (G^3, 3); and the mean crossing point c, mass_point (G^3, 3)
@@ -364,6 +379,7 @@ def qef_vertices(qef_edges, t, normal):
     cell_corner = torch.stack(torch.meshgrid(coordinates, coordinates, coordinates, indexing="ij"), dim=-1)
     cell_corner = cell_corner.reshape(-1, 3).float()
 
+    #print(f"cell_corner {cell_corner}")
     # solve every cell at once; a cell whose solution leaves the cell is solved again with a 10 times stronger pull,
     # and a cell never solved inside keeps its centre; vertex_position (G^3, 3), unsolved (G^3,) bool
     vertex_position = cell_corner + 0.5
@@ -378,12 +394,16 @@ def qef_vertices(qef_edges, t, normal):
         # => A + regularization*Identity = b + regularization*mass_point
         # so A is (matrix + regularization*Identity) and b = (rhs + regularization*mass_point) ?
         solution = torch.linalg.solve((matrix + regularization*identity), (rhs + regularization*mass_point))
-        print(f"solution: {solution}")
+        #print(f"solution: {solution}")
 
         # idk
-        solution_in_cell = torch.zeros(G ** 3, device="cuda")
-        solution_in_cell = solution == True
-        print(f"solution_in_cell: {solution_in_cell}")
+        solution_in_cell = torch.zeros(G ** 3, dtype=torch.bool, device="cuda")
+        #print(f"cell_corner[:G][0]: {cell_corner[:G][0]}")
+        # cell_corner < solution < cell_corner + 1
+        solution_in_cell = torch.all((torch.lt(cell_corner, solution) & torch.lt(solution, torch.add(cell_corner, 1))), 1)
+        #print(f"solution_in_cell: {solution_in_cell}")
+        #print(f"len(solution_in_cell): {len(solution_in_cell)}")
+        #print(f"len(unsolved): {len(unsolved)}")
 
         newly_solved = unsolved & solution_in_cell
         vertex_position[newly_solved] = solution[newly_solved]
