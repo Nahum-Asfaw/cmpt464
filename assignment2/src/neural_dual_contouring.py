@@ -27,12 +27,12 @@ class NDC(nn.Module):
         super().__init__()
         ##### your code starts here ##### Problem 2.1
         # the layers that forward uses, in order: conv0 to conv4, then the output layer conv_out
-        self.conv0 = ...
-        self.conv1 = ...
-        self.conv2 = ...
-        self.conv3 = ...
-        self.conv4 = ...
-        self.conv_out = ...
+        self.conv0 = nn.Conv3d(1, CHANNELS, (3, 3, 3)) # 3x3x3
+        self.conv1 = nn.Conv3d(CHANNELS, CHANNELS, (3, 3, 3)) # 3x3x3
+        self.conv2 = nn.Conv3d(CHANNELS, CHANNELS, (3, 3, 3)) # 3x3x3
+        self.conv3 = nn.Conv3d(CHANNELS, CHANNELS, (1, 1, 1)) # 1x1x1
+        self.conv4 = nn.Conv3d(CHANNELS, CHANNELS, (1, 1, 1))        
+        self.conv_out = nn.Conv3d(CHANNELS, 3, (1, 1, 1))        
         ##### your code ends here #####
 
     def forward(self, sdf):
@@ -74,8 +74,8 @@ def masked_mse(prediction, target, mask):
     # the functions that, combined, do this.
 
     # squared_error (G, G, G): squared distance between the predicted and the target vertex of each cell
-    squared_error = ...
-    loss = ...
+    squared_error = torch.square(torch.sub(prediction[mask], target[mask]))
+    loss = torch.mean(squared_error)
     ##### your code ends here #####
     return loss
 
@@ -95,22 +95,31 @@ def random_symmetry(sdf, vertex_in_cell, mask):
 
     # permutation: the new order of the three axes
     permutation = torch.randperm(3).tolist()
-    sdf = ...
-    mask = ...
+    sdf[0] = sdf[permutation[0]]
+    sdf[1] = sdf[permutation[1]]
+    sdf[2] = sdf[permutation[2]]
+
+    mask[0] = mask[permutation[0]]
+    mask[1] = mask[permutation[1]]
+    mask[2] = mask[permutation[2]]
+
     # the grid axes and the three coordinates of the vertex follow the same permutation
-    vertex_in_cell = ...
+    vertex_in_cell[0] = vertex_in_cell[permutation[0]]
+    vertex_in_cell[1] = vertex_in_cell[permutation[1]]
+    vertex_in_cell[2] = vertex_in_cell[permutation[2]]
+    vertex_in_cell[3] = torch.Tensor(permutation)
 
     for a in range(3):
         if torch.rand(1).item() < 0.5:
             # flip axis a
-            sdf = ...
-            mask = ...
-            vertex_in_cell = ...
-            vertex_in_cell[..., a] = ...
+            sdf = torch.flip(sdf, [a])
+            mask = torch.flip(mask, [a])
+            vertex_in_cell = torch.flip(vertex_in_cell, [a])
+            vertex_in_cell[:, a] = abs(vertex_in_cell[:, a] - 1)
 
     # swap inside and outside
     if torch.rand(1).item() < 0.5:
-        sdf = ...
+        sdf = torch.neg(sdf)
     ##### your code ends here #####
     return sdf, vertex_in_cell, mask
 
