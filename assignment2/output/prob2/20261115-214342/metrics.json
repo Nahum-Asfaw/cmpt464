@@ -1,0 +1,86 @@
+{
+  "00003173": {
+    "neural": {
+      "chamfer": 0.05364689975976944,
+      "edge_chamfer": 0.5874500274658203,
+      "num_vertices": 4506,
+      "num_faces": 9008
+    },
+    "estimated": {
+      "chamfer": 0.010478567332029343,
+      "edge_chamfer": 0.48635512590408325,
+      "num_vertices": 4506,
+      "num_faces": 9008
+    }
+  },
+  "00004857": {
+    "neural": {
+      "chamfer": 0.05574505031108856,
+      "edge_chamfer": 0.4116344451904297,
+      "num_vertices": 6404,
+      "num_faces": 12812
+    },
+    "estimated": {
+      "chamfer": 0.01525961235165596,
+      "edge_chamfer": 0.26673048734664917,
+      "num_vertices": 6404,
+      "num_faces": 12812
+    }
+  },
+  "00006462": {
+    "neural": {
+      "chamfer": 0.07091207802295685,
+      "edge_chamfer": 0.6619998812675476,
+      "num_vertices": 4340,
+      "num_faces": 8704
+    },
+    "estimated": {
+      "chamfer": 0.012362148612737656,
+      "edge_chamfer": 0.20863988995552063,
+      "num_vertices": 4340,
+      "num_faces": 8704
+    }
+  },
+  "00007496": {
+    "neural": {
+      "chamfer": 0.04479920119047165,
+      "edge_chamfer": 0.6334964036941528,
+      "num_vertices": 9796,
+      "num_faces": 19588
+    },
+    "estimated": {
+      "chamfer": 0.00898926705121994,
+      "edge_chamfer": 0.2571631073951721,
+      "num_vertices": 9796,
+      "num_faces": 19588
+    }
+  },
+  "00008714": {
+    "neural": {
+      "chamfer": 0.06734499335289001,
+      "edge_chamfer": 0.4996172785758972,
+      "num_vertices": 7618,
+      "num_faces": 15252
+    },
+    "estimated": {
+      "chamfer": 0.01608411595225334,
+      "edge_chamfer": 0.2788369059562683,
+      "num_vertices": 7618,
+      "num_faces": 15252
+    }
+  },
+  "00009943": {
+    "neural": {
+      "chamfer": 0.057652778923511505,
+      "edge_chamfer": 0.8014758825302124,
+      "num_vertices": 6018,
+      "num_faces": 12040
+    },
+    "estimated": {
+      "chamfer": 0.012814799323678017,
+      "edge_chamfer": 0.27562713623046875,
+      "num_vertices": 6018,
+      "num_faces": 12040
+    }
+  }
+}

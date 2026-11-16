@@ -11,7 +11,7 @@ from torch.nn import functional
 
 CHANNELS = 64
 LEARNING_RATE = 1e-4
-TRAIN_STEPS = 10000
+TRAIN_STEPS = 1000
 LOG_EVERY = 100
 
 
@@ -95,19 +95,12 @@ def random_symmetry(sdf, vertex_in_cell, mask):
 
     # permutation: the new order of the three axes
     permutation = torch.randperm(3).tolist()
-    sdf[0] = sdf[permutation[0]]
-    sdf[1] = sdf[permutation[1]]
-    sdf[2] = sdf[permutation[2]]
+    sdf = torch.permute(sdf, permutation)
 
-    mask[0] = mask[permutation[0]]
-    mask[1] = mask[permutation[1]]
-    mask[2] = mask[permutation[2]]
+    mask = torch.permute(mask, permutation)
 
     # the grid axes and the three coordinates of the vertex follow the same permutation
-    vertex_in_cell[0] = vertex_in_cell[permutation[0]]
-    vertex_in_cell[1] = vertex_in_cell[permutation[1]]
-    vertex_in_cell[2] = vertex_in_cell[permutation[2]]
-    vertex_in_cell[3] = torch.Tensor(permutation)
+    vertex_in_cell = vertex_in_cell.permute(*permutation, 3)[..., permutation] # AI for [..., permutation]
 
     for a in range(3):
         if torch.rand(1).item() < 0.5:
@@ -115,7 +108,7 @@ def random_symmetry(sdf, vertex_in_cell, mask):
             sdf = torch.flip(sdf, [a])
             mask = torch.flip(mask, [a])
             vertex_in_cell = torch.flip(vertex_in_cell, [a])
-            vertex_in_cell[:, a] = abs(vertex_in_cell[:, a] - 1)
+            vertex_in_cell[..., a] = abs(vertex_in_cell[..., a] - 1)
 
     # swap inside and outside
     if torch.rand(1).item() < 0.5:

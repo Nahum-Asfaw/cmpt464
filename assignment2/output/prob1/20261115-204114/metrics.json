@@ -1,0 +1,86 @@
+{
+  "00003173": {
+    "exact": {
+      "chamfer": 0.002319734776392579,
+      "edge_chamfer": 0.051533494144678116,
+      "num_vertices": 4506,
+      "num_faces": 9008
+    },
+    "estimated": {
+      "chamfer": 0.010225757025182247,
+      "edge_chamfer": 0.49411559104919434,
+      "num_vertices": 4506,
+      "num_faces": 9008
+    }
+  },
+  "00004857": {
+    "exact": {
+      "chamfer": 0.0013773776590824127,
+      "edge_chamfer": 0.051813751459121704,
+      "num_vertices": 6404,
+      "num_faces": 12812
+    },
+    "estimated": {
+      "chamfer": 0.015257010236382484,
+      "edge_chamfer": 0.2673049867153168,
+      "num_vertices": 6404,
+      "num_faces": 12812
+    }
+  },
+  "00006462": {
+    "exact": {
+      "chamfer": 0.003964556846767664,
+      "edge_chamfer": 0.06751929968595505,
+      "num_vertices": 4340,
+      "num_faces": 8704
+    },
+    "estimated": {
+      "chamfer": 0.012448577210307121,
+      "edge_chamfer": 0.2057057023048401,
+      "num_vertices": 4340,
+      "num_faces": 8704
+    }
+  },
+  "00007496": {
+    "exact": {
+      "chamfer": 0.0025289002805948257,
+      "edge_chamfer": 0.03237292170524597,
+      "num_vertices": 9796,
+      "num_faces": 19588
+    },
+    "estimated": {
+      "chamfer": 0.00890867318958044,
+      "edge_chamfer": 0.2574203610420227,
+      "num_vertices": 9796,
+      "num_faces": 19588
+    }
+  },
+  "00008714": {
+    "exact": {
+      "chamfer": 0.0024973051622509956,
+      "edge_chamfer": 0.04945622384548187,
+      "num_vertices": 7618,
+      "num_faces": 15252
+    },
+    "estimated": {
+      "chamfer": 0.016153236851096153,
+      "edge_chamfer": 0.2781728506088257,
+      "num_vertices": 7618,
+      "num_faces": 15252
+    }
+  },
+  "00009943": {
+    "exact": {
+      "chamfer": 0.004329130984842777,
+      "edge_chamfer": 0.04253622144460678,
+      "num_vertices": 6018,
+      "num_faces": 12040
+    },
+    "estimated": {
+      "chamfer": 0.01283828355371952,
+      "edge_chamfer": 0.2757120728492737,
+      "num_vertices": 6018,
+      "num_faces": 12040
+    }
+  }
+}

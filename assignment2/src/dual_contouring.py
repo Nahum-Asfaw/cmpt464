@@ -378,7 +378,7 @@ def qef_vertices(qef_edges, t, normal):
     crossing_count = torch.zeros(G ** 3, device="cuda").index_add(0, crossing_cell, one_per_crossing)
     point_sum = torch.zeros(G ** 3, 3, device="cuda").index_add(0, crossing_cell, crossing_point)
     # is mean c
-    mass_point = torch.zeros(G ** 3, 3, device="cuda").index_reduce_(0, crossing_cell, crossing_point, "mean") 
+    mass_point = torch.zeros(G ** 3, 3, device="cuda").index_reduce_(0, crossing_cell, crossing_point, "mean", include_self=False) # AI for incldue_self=False
 
     # low corner of every cell, (G^3, 3)
     coordinates = torch.arange(G, device="cuda")
@@ -475,7 +475,7 @@ def estimate_hermite(sdf):
 
     # n = ((1-t)g_0 + t*g_1)/||((1-t)g_0 + t*g_1)||
     # which is the normalization of ((1-t)*g_0 + t*g1)
-    normal = torch.nn.functional.normalize(((1-t[..., None])*gradient_end + t[..., None]*gradient_start))
+    normal = torch.nn.functional.normalize(((1-t[..., None])*gradient_start + t[..., None]*gradient_end), dim=-1) # AI for dim=-1
     ##### your code ends here #####
     return t, normal
 
